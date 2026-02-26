@@ -34,6 +34,8 @@
     "dbc-migrate-to-damm-v2": "tsx src/actions/dbc/migrate_damm_v2.ts",
     "dbc-swap": "tsx src/actions/dbc/swap.ts",
     "dbc-transfer-pool-creator": "tsx src/actions/dbc/transfer_pool_creator.ts",
+    "dbc-get-config-token": "tsx src/actions/dbc/get_config_token.ts",
+    "dbc-get-config-pool": "tsx src/actions/dbc/get_config_pool.ts",
     "alpha-vault-create": "tsx src/actions/alpha_vault/create_alpha_vault.ts",
     "presale-vault-create": "tsx src/actions/presale_vault/create_presale_vault.ts"
   },

@@ -1024,3 +1024,69 @@ export async function transferDbcPoolCreator(
     throw error;
   }
 }
+
+/**
+ * Get DBC pool config based on token address
+ * @param connection - The connection to the network
+ * @param baseMint - The base mint address
+ * @returns The DBC pool config
+ */
+export async function getDbcPoolConfig(connection: Connection, baseMint: PublicKey) {
+  const dbcInstance = new DynamicBondingCurveClient(connection, 'confirmed');
+
+  const poolState = await dbcInstance.state.getPoolByBaseMint(baseMint);
+  if (!poolState) {
+    throw new Error(`DBC Pool not found for ${baseMint.toString()}`);
+  }
+
+  const dbcConfigAddress = poolState.account.config;
+  const poolConfig = await dbcInstance.state.getPoolConfig(dbcConfigAddress);
+  if (!poolConfig) {
+    throw new Error(`DBC Pool config not found for ${dbcConfigAddress.toString()}`);
+  }
+
+  return { configAddress: dbcConfigAddress, poolConfig };
+}
+
+/**
+ * Get DBC pool config based on config address
+ * @param connection - The connection to the network
+ * @param configAddress - The config address
+ * @returns The DBC pool config
+ */
+export async function getDbcConfigByAddress(connection: Connection, configAddress: PublicKey) {
+  const dbcInstance = new DynamicBondingCurveClient(connection, 'confirmed');
+
+  const poolConfig = await dbcInstance.state.getPoolConfig(configAddress);
+  if (!poolConfig) {
+    throw new Error(`DBC Pool config not found for ${configAddress.toString()}`);
+  }
+
+  return { configAddress, poolConfig };
+}
+
+/**
+ * Get DBC pool config based on pool address
+ * @param connection - The connection to the network
+ * @param poolAddress - The pool address
+ * @returns The DBC pool config
+ */
+export async function getDbcPoolConfigByPoolAddress(
+  connection: Connection,
+  poolAddress: PublicKey
+) {
+  const dbcInstance = new DynamicBondingCurveClient(connection, 'confirmed');
+
+  const poolState = await dbcInstance.state.getPool(poolAddress);
+  if (!poolState) {
+    throw new Error(`DBC Pool not found for ${poolAddress.toString()}`);
+  }
+
+  const dbcConfigAddress = poolState.config;
+  const poolConfig = await dbcInstance.state.getPoolConfig(dbcConfigAddress);
+  if (!poolConfig) {
+    throw new Error(`DBC Pool config not found for ${dbcConfigAddress.toString()}`);
+  }
+
+  return { configAddress: dbcConfigAddress, poolConfig };
+}

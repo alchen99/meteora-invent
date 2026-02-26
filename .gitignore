@@ -29,6 +29,7 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*
 keypair.json
 
 # Vercel
@@ -62,3 +63,6 @@ studio/keypair.json
 studio/baseMintKeypair.json
 studio/data/kv_proofs/
 studio/data/whitelist_wallet.csv
+
+# Temp files
+z-*

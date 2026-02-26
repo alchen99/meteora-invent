@@ -132,7 +132,7 @@ meteora-invent/
 │   │   ├── kv_proof_example.json     # KV proof examples
 │   │   ├── kv_proofs/                # KV proof data
 │   │   └── whitelist_wallet_example.csv # Wallet whitelist examples
-│   ├── 📁 src/                       # 🔒 Source code (AI never modifies)
+│   ├── 📁 src/                       # Source code (ONLY modified if specifically asked to add core functionality)
 │   │   ├── actions/                  # Executable protocol actions
 │   │   │   ├── alpha_vault/          # Alpha Vault actions
 │   │   │   ├── damm_v1/              # DAMM V1 actions
@@ -228,9 +228,9 @@ meteora-invent/
 - `studio/config/*.jsonc` - Protocol configurations
 - `scaffolds/*/.*env*` - Environment configurations  
 - `scaffolds/*/src/**` - Frontend source code (when building UIs)
+- `studio/src/**` - Program logic and actions (when building new functionality)
 
 ### **Files AI Must NEVER Modify**
-- `studio/src/**` - Program logic and actions
 - `**/package.json` - Dependencies and scripts (unless explicitly requested)
 - `**/node_modules/**` - Generated dependencies
 - `**/.git/**` - Git repository data
