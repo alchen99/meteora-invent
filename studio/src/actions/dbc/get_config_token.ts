@@ -17,7 +17,7 @@ async function main() {
   }
 
   let rpcUrl;
-  switch (network.toLowerCase()) {
+  switch (network?.toLowerCase()) {
     case 'devnet':
       rpcUrl = DEVNET_RPC_URL;
       break;

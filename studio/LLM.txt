@@ -605,6 +605,7 @@ studio/
 ├── test-ledger/                  # Local validator data
 |__ dbc-examples/                 # Dynamic Bonding Curve examples from Solscan
 ├── .env                          # Environment variables (create from .env.example)
+|__ dbc-sdk-docs.md               # @meteora-ag/dynamic-bonding-curve-sdk - Meteora Dynamic Bonding Curve SDK: Function Documentation
 ├── keypair.json                  # Generated wallet file
 ├── package.json                  # Script definitions
 └── LLM.txt                       # This AI guide
