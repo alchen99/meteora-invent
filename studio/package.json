@@ -30,6 +30,7 @@
     "dbc-create-config": "tsx src/actions/dbc/create_config.ts",
     "dbc-create-pool": "tsx src/actions/dbc/create_pool.ts",
     "dbc-claim-trading-fee": "tsx src/actions/dbc/claim_trading_fee.ts",
+    "dbc-duplicate-config": "tsx src/actions/dbc/duplicate_config.ts",
     "dbc-migrate-to-damm-v1": "tsx src/actions/dbc/migrate_damm_v1.ts",
     "dbc-migrate-to-damm-v2": "tsx src/actions/dbc/migrate_damm_v2.ts",
     "dbc-swap": "tsx src/actions/dbc/swap.ts",
