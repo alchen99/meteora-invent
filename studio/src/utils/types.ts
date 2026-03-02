@@ -60,6 +60,7 @@ export interface TokenMetadata {
 export type MeteoraConfigBase = {
   rpcUrl: string;
   dryRun: boolean;
+  debug: boolean;
   keypairFilePath: string;
   computeUnitPriceMicroLamports?: number;
   quoteMint?: string | null;

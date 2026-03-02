@@ -21,6 +21,7 @@ import {
   buildCurveWithMarketCap,
   buildCurveWithMidPrice,
   buildCurveWithTwoSegments,
+  getPriceFromSqrtPrice,
   getSqrtPriceFromPrice,
   ConfigParameters,
   DAMM_V1_MIGRATION_FEE_ADDRESS,
@@ -30,8 +31,10 @@ import {
   deriveDbcPoolAuthority,
   deriveEscrow,
   DynamicBondingCurveClient,
+  MAX_SQRT_PRICE,
 } from '@meteora-ag/dynamic-bonding-curve-sdk';
 import BN from 'bn.js';
+import Decimal from 'decimal.js';
 import { uploadTokenMetadata } from '../../helpers/metadata';
 
 /**
@@ -81,6 +84,122 @@ export async function createDbcConfig(
       getSqrtPriceFromPrice(String(price), tokenBaseDecimal, tokenQuoteDecimal)
     );
     curveConfig = buildCurveWithCustomSqrtPrices({ ...restParams, sqrtPrices });
+  } else if (buildCurveMode === 91) {
+    // NOTE: The following error usually means some number in the input needs to be converted to BigInt. i.e. input > Number.MAX_SAFE_INTEGER (9,007,199,254,740,991)
+    //       Error /solana-token/meteora-invent/node_modules/.pnpm/bn.js@5.2.2/node_modules/bn.js/lib/bn.js:6
+    //             if (!val) throw new Error(msg || 'Assertion failed');
+    //        Error: Assertion failed
+
+    // CUSTOM buildCurveWithTwoSegments
+    console.log(`CUSTOM buildCurveWithTwoSegments`);
+    const {
+      sqrtStartPrice,
+      migrationSqrtPrice,
+      migrationBaseThreshold,
+      migrationQuoteThreshold,
+      curveSqrtPrice,
+      curveLiquidity,
+      ...restParams
+    } = buildCurveParams as any;
+
+    if (!curveSqrtPrice || !Array.isArray(curveSqrtPrice) || curveSqrtPrice.length < 2) {
+      throw new Error(
+        'curveSqrtPrice array must have at least 2 elements for custom buildCurveWithCustomSqrtPrices'
+      );
+    }
+    if (!curveLiquidity || !Array.isArray(curveLiquidity) || curveLiquidity.length < 2) {
+      throw new Error(
+        'curveLiquidity array must have at least 2 elements for custom buildCurveWithCustomSqrtPrices'
+      );
+    }
+    if (curveSqrtPrice.length !== curveLiquidity.length) {
+      throw new Error(
+        'curveSqrtPrice array and curveLiquidity array must be the same length for custom buildCurveWithCustomSqrtPrices'
+      );
+    }
+
+    // create custom curve definition
+    const customCurve = curveSqrtPrice.map((sqrtPrice, index) => ({
+      sqrtPrice: new BN(BigInt(sqrtPrice)),
+      liquidity: new BN(BigInt(curveLiquidity[index])),
+    }));
+
+    if (config.debug) console.log(`Build Curve Params = `, buildCurveParams);
+    if (config.debug) console.log(`customCurve = `, customCurve);
+    if (config.debug) console.log(`restParams = `, restParams);
+
+    // calculate initialMarketCap
+    restParams.initialMarketCap = getMarketCap(
+      sqrtStartPrice,
+      restParams.token.tokenBaseDecimal,
+      restParams.token.tokenQuoteDecimal,
+      restParams.token.totalTokenSupply
+    );
+    if (config.debug) console.log(`sqrtStartPrice = `, sqrtStartPrice);
+    if (config.debug) console.log(`sqrtStartPrice BN = `, new BN(BigInt(sqrtStartPrice)));
+    if (config.debug) console.log(`Initial Market Cap = `, restParams.initialMarketCap);
+
+    // calculate migrationMarketCap
+    restParams.migrationMarketCap = getMarketCap(
+      migrationSqrtPrice,
+      restParams.token.tokenBaseDecimal,
+      restParams.token.tokenQuoteDecimal,
+      restParams.token.totalTokenSupply
+    );
+    if (config.debug) console.log(`migrationSqrtPrice = `, migrationSqrtPrice);
+    if (config.debug) console.log(`migrationSqrtPrice BN = `, new BN(BigInt(migrationSqrtPrice)));
+    if (config.debug) console.log(`Migration Market Cap = `, restParams.migrationMarketCap);
+
+    // calculate percentageSupplyOnMigration
+    restParams.percentageSupplyOnMigration = getPercentageSupplyOnMigration(
+      migrationBaseThreshold,
+      restParams.token.totalTokenSupply,
+      restParams.token.tokenBaseDecimal
+    );
+    if (config.debug)
+      console.log(`percentageSupplyOnMigration = `, restParams.percentageSupplyOnMigration);
+    //console.log(`restParams = `, restParams);
+    curveConfig = buildCurveWithTwoSegments(restParams as any);
+    if (config.debug) console.log(`curveConfig b4 = `, curveConfig);
+    if (config.debug) console.log(`curveConfig.sqrtStartPrice b4 = `, curveConfig.sqrtStartPrice);
+    if (config.debug) console.log(`curveConfig.curve b4 = `, curveConfig.curve);
+    curveConfig.migrationQuoteThreshold = new BN(BigInt(migrationQuoteThreshold));
+    if (config.debug) console.log(`migrationQuoteThreshold = `, migrationQuoteThreshold);
+    if (config.debug)
+      console.log(`migrationQuoteThreshold BN = `, curveConfig.migrationQuoteThreshold);
+    curveConfig.curve = customCurve;
+    if (config.debug) console.log(`custom curve = `, customCurve);
+    if (config.debug) console.log(`curveConfig after = `, curveConfig);
+  } else if (buildCurveMode === 92) {
+    // CUSTOM buildCurveWithCustomSqrtPrices
+    console.log(`CUSTOM buildCurveWithCustomSqrtPrices`);
+    const {
+      swapBaseAmount,
+      sqrtStartPrice,
+      migrationSqrtPrice,
+      migrationQuoteThreshold,
+      migrationBaseThreshold,
+      curveSqrtPrice,
+      curveLiquidity,
+      ...restParams
+    } = buildCurveParams as any;
+    const tokenBaseDecimal = restParams.token?.tokenBaseDecimal ?? 6;
+    const tokenQuoteDecimal = restParams.token?.tokenQuoteDecimal ?? 9;
+    if (!curveSqrtPrice || !Array.isArray(curveSqrtPrice) || curveSqrtPrice.length < 2) {
+      throw new Error(
+        'curveSqrtPrice array must have at least 2 elements for custom buildCurveWithCustomSqrtPrices'
+      );
+    }
+    if (!curveLiquidity || !Array.isArray(curveLiquidity) || curveLiquidity.length < 2) {
+      throw new Error(
+        'curveLiquidity array must have at least 2 elements for custom buildCurveWithCustomSqrtPrices'
+      );
+    }
+    if (curveSqrtPrice.length !== curveLiquidity.length) {
+      throw new Error(
+        'curveSqrtPrice array and curveLiquidity array must be the same length for custom buildCurveWithCustomSqrtPrices'
+      );
+    }
   } else {
     throw new Error(
       `Unsupported DBC build curve mode: ${(config.dbcConfig as any).buildCurveMode}`
@@ -1089,4 +1208,43 @@ export async function getDbcPoolConfigByPoolAddress(
   }
 
   return { configAddress: dbcConfigAddress, poolConfig };
+}
+
+/**
+ * Calculate market cap from sqrtPrice
+ *   marketCap = (sqrtPrice / 2^64)^2 * 10^(tokenBaseDecimal - tokenQuoteDecimal) * totalTokenSupply
+ * @param sqrtPrice - Square root price to calculate market cap from
+ * @param tokenBaseDecimal - Token base decimal
+ * @param tokenQuoteDecimal - Token quote decimal
+ * @param totalTokenSupply - Total token supply
+ * @returns The market cap
+ */
+function getMarketCap(
+  sqrtPrice: number,
+  tokenBaseDecimal: number,
+  tokenQuoteDecimal: number,
+  totalTokenSupply: number
+) {
+  return (
+    Math.pow(sqrtPrice / Math.pow(2, 64), 2) *
+    Math.pow(10, tokenBaseDecimal - tokenQuoteDecimal) *
+    totalTokenSupply
+  );
+}
+
+/**
+ * Calculate percentange of token supply on migration
+ *   preMigrationTokenSupply = totalTokenSupply * Math.pow(10, tokenBaseDecimal)
+ *   percentageSupplyOnMigration = (migrationBaseThreshold / preMigrationTokenSupply) * 100
+ * @param migrationBaseThreshold
+ * @param totalTokenSupply - Total token supply
+ * @param tokenBaseDecimal - Token base decimal
+ * @returns percentage token supply on migration
+ */
+function getPercentageSupplyOnMigration(
+  migrationBaseThreshold: number,
+  totalTokenSupply: number,
+  tokenBaseDecimal: number
+) {
+  return (migrationBaseThreshold / (totalTokenSupply * Math.pow(10, tokenBaseDecimal))) * 100;
 }
